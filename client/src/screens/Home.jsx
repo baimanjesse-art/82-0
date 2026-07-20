@@ -75,7 +75,8 @@ export default function Home({ navigate }) {
           </div>
           <p className="mt-1 text-sm text-slate-400">
             One spin draws a real team and locks their era. Beat the actual
-            squad with players from their own decade.
+            squad with their own decade's players — everyone at his natural
+            position.
           </p>
         </button>
         <button
@@ -88,8 +89,8 @@ export default function Home({ navigate }) {
             All-Time Battle
           </div>
           <p className="mt-1 text-sm text-slate-400">
-            The 72-10 Bulls, the 73-9 Warriors, even the Dream Team — draft
-            across every era and take down a legend.
+            The 72-10 Bulls, the 73-9 Warriors, even the Dream Team — spin
+            for eras, take each decade's best, and slay a legend.
           </p>
         </button>
         <button

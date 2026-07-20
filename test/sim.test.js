@@ -7,6 +7,7 @@ import {
   respinSpin,
   canRespin,
   decadeSpin,
+  eraSpin,
 } from "../shared/players.js";
 import { POSITIONS, TEAM_META, DECADES } from "../shared/constants.js";
 import {
@@ -16,6 +17,7 @@ import {
   statEdges,
   bestPick,
   bestLineup,
+  fitDistance,
   makeRng,
   gradeForWins,
 } from "../shared/sim.js";
@@ -224,6 +226,74 @@ test("decadeSpin locks the decade and respects exclusions", () => {
         used.push(s.key);
       }
     }
+  }
+});
+
+test("eraSpin serves a whole decade's best, deduped and sorted", () => {
+  const rng = makeRng(11);
+  const s = eraSpin({ rng });
+  assert.ok(s, "spin lands");
+  assert.equal(s.team, null, "era spins carry no franchise");
+  assert.ok(DECADES.includes(s.decade));
+  const names = s.players.map((p) => p.name);
+  assert.equal(new Set(names).size, names.length, "no duplicate names");
+  for (let i = 1; i < s.players.length; i++) {
+    assert.ok(s.players[i - 1].rating >= s.players[i].rating, "sorted by rating");
+  }
+  assert.ok(s.players.length >= 15 && s.players.length <= 24, `pool size ${s.players.length}`);
+  for (const p of s.players) assert.equal(p.decade, s.decade);
+  // Used decades are excluded; taken names never reappear.
+  const s2 = eraSpin({ usedDecades: DECADES.filter((d) => d !== "1990s"), rng });
+  assert.equal(s2.decade, "1990s");
+  const taken = s2.players.slice(0, 5).map((p) => p.name);
+  const s3 = eraSpin({ usedDecades: DECADES.filter((d) => d !== "1990s"), takenNames: taken, rng });
+  for (const p of s3.players) assert.ok(!taken.includes(p.name));
+  assert.equal(eraSpin({ usedDecades: DECADES, rng }), null);
+});
+
+test("strict-position historic drafts never dead-end", () => {
+  const rng = makeRng(2026);
+  for (let trial = 0; trial < 600; trial++) {
+    const opp = spinWheel({ rng });
+    const lineup = bestLineup(POOLS[opp.key]);
+    const taken = POSITIONS.map((pos) => lineup[pos].name);
+    const roster = { PG: null, SG: null, SF: null, PF: null, C: null };
+    const used = [];
+    const greedy = trial % 2 === 0; // alternate best-fit picks with random legal picks
+    for (let round = 0; round < 5; round++) {
+      const openSlots = POSITIONS.filter((pos) => !roster[pos]);
+      const opts = {
+        decade: opp.decade,
+        usedPoolKeys: used,
+        takenNames: taken,
+        excludeKeys: [opp.key],
+        openSlots,
+        rng,
+      };
+      const s = decadeSpin(opts) || decadeSpin({ ...opts, minAvailable: 1 });
+      assert.ok(s, `trial ${trial} vs ${opp.key}: round ${round + 1} has no pool for ${openSlots}`);
+      let player;
+      let slot;
+      if (greedy) {
+        const pick = bestPick(s.players, roster, { naturalOnly: true });
+        assert.ok(pick, `trial ${trial}: no natural pick from ${s.key} for ${openSlots}`);
+        player = pick.player;
+        slot = pick.slot;
+      } else {
+        const pairs = s.players.flatMap((p) =>
+          openSlots.filter((sl) => fitDistance(p, sl) === 0).map((sl) => [p, sl])
+        );
+        assert.ok(pairs.length > 0, `trial ${trial}: no legal pair from ${s.key} for ${openSlots}`);
+        [player, slot] = pairs[Math.floor(rng() * pairs.length)];
+      }
+      roster[slot] = player;
+      taken.push(player.name);
+      used.push(s.key);
+    }
+    assert.ok(
+      POSITIONS.every((pos) => roster[pos] && fitDistance(roster[pos], pos) === 0),
+      "roster completed at natural positions"
+    );
   }
 });
 

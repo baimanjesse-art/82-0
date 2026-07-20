@@ -26,12 +26,16 @@ WebSocket** server for real-time head-to-head play.
   their strongest actual starting five.
 - Their **era locks**: five team-only spins inside that decade to build the
   squad that can take them down, then a best-of-7 series decides it.
+- **Strict positions**: every player must be placed (and swapped) at a
+  position he naturally plays — no stretch or out-of-position stacking.
 
 ### All-Time Battle
-- No era lock, but the opponent is a legend: every real **68+ win team**
-  ('96 and '97 Bulls, '16 Warriors, '72 Lakers, '67 Sixers), the **1992
-  Dream Team**, the **2008 Redeem Team**, or the all-time first team.
-- Draft across all of history and try to survive seven games.
+- The opponent is a legend: every real **68+ win team** ('96 and '97 Bulls,
+  '16 Warriors, '72 Lakers, '67 Sixers), the **1992 Dream Team**, the
+  **2008 Redeem Team**, or the all-time first team.
+- Each of your five spins lands on an **era**, not a team — you take your
+  pick from that whole decade's best players. Build the ultimate
+  cross-generation squad and try to survive seven games.
 
 ### Head-to-Head (real-time)
 - Create a room, share the 4-letter code (or invite link `#/h2h/CODE`).

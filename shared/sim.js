@@ -408,14 +408,17 @@ export function bestLineup(pool) {
 
 /**
  * Choose the best available player + open slot for a partially-filled roster.
+ * With `naturalOnly`, only pairs where the player natively plays the slot
+ * are considered (strict-position rules in Historic Battle).
  */
-export function bestPick(pool, roster) {
+export function bestPick(pool, roster, { naturalOnly = false } = {}) {
   const openSlots = POSITIONS.filter((pos) => !roster[pos]);
   if (openSlots.length === 0) return null;
   let best = null;
   for (const player of pool) {
     for (const slot of openSlots) {
       const dist = fitDistance(player, slot);
+      if (naturalOnly && dist !== 0) continue;
       const value = player.rating - OOP_PENALTY[dist];
       if (!best || value > best.value) {
         best = { player, slot, value };

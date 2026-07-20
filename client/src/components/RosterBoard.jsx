@@ -8,8 +8,10 @@ import PlayerPhoto from "./PlayerPhoto.jsx";
  * open slots become clickable and show fit quality for that player.
  * When `onSwap` is provided (and nothing is being placed), locked-in players
  * can be rearranged: tap a player, then tap another slot to swap or move.
+ * `strictFit` (Historic Battle) only allows placements and swaps where every
+ * player ends up at a position he naturally plays.
  */
-export default function RosterBoard({ roster, placing, onPlace, onSwap, title, accent, compact }) {
+export default function RosterBoard({ roster, placing, onPlace, onSwap, title, accent, compact, strictFit }) {
   const [swapFrom, setSwapFrom] = useState(null);
   const swapMode = Boolean(onSwap) && !placing;
   const filled = POSITIONS.filter((pos) => roster[pos]).length;
@@ -45,8 +47,8 @@ export default function RosterBoard({ roster, placing, onPlace, onSwap, title, a
       <div className="space-y-1.5">
         {POSITIONS.map((pos) => {
           const p = roster[pos];
-          const canPlace = placing && !p;
-          const dist = canPlace ? fitDistance(placing, pos) : null;
+          const dist = placing && !p ? fitDistance(placing, pos) : null;
+          const canPlace = placing && !p && !(strictFit && dist !== 0);
           const fitLabel =
             dist === 0 ? "natural fit" : dist === 1 ? "stretch" : "out of position";
           const fitColor =
@@ -57,8 +59,17 @@ export default function RosterBoard({ roster, placing, onPlace, onSwap, title, a
                 : "text-rose-400 border-rose-500/70";
           const placedDist = p ? fitDistance(p, pos) : 0;
           const isSwapSource = swapMode && swapFrom === pos;
-          const isSwapTarget = swapMode && swapFrom !== null && swapFrom !== pos;
-          const swapClickable = swapMode && (p || swapFrom !== null);
+          // In strict mode a swap is only offered when both players (or the
+          // mover, for an empty target) land on a natural position.
+          const strictSwapOk =
+            !strictFit ||
+            swapFrom === null ||
+            (fitDistance(roster[swapFrom], pos) === 0 &&
+              (!p || fitDistance(p, swapFrom) === 0));
+          const isSwapTarget =
+            swapMode && swapFrom !== null && swapFrom !== pos && strictSwapOk;
+          const swapClickable =
+            swapMode && (swapFrom === null ? Boolean(p) : swapFrom === pos || isSwapTarget);
           return (
             <button
               key={pos}
@@ -119,9 +130,11 @@ export default function RosterBoard({ roster, placing, onPlace, onSwap, title, a
                 <span className="flex-1 py-1.5 text-xs text-slate-500">
                   {canPlace
                     ? `tap to place · ${fitLabel}`
-                    : isSwapTarget
-                      ? "move here"
-                      : "empty"}
+                    : placing && strictFit
+                      ? "not his position"
+                      : isSwapTarget
+                        ? "move here"
+                        : "empty"}
                 </span>
               )}
             </button>

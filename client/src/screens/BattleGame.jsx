@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
-import { spinWheel, decadeSpin, POOLS } from "../../../shared/players.js";
+import { spinWheel, decadeSpin, eraSpin, POOLS } from "../../../shared/players.js";
 import {
   bestLineup,
   bestPick,
   evaluateTeam,
+  fitDistance,
   simulateSeason,
   simulateSeries,
   statEdges,
@@ -21,9 +22,10 @@ const EMPTY_ROSTER = { PG: null, SG: null, SF: null, PF: null, C: null };
 /**
  * Battle modes: draft a squad, then face a real team in a best-of-7.
  * - historic: spin once for an opponent; their era locks and you draft
- *   from that decade only, one team-only spin per round.
- * - alltime: face a legendary 68+ win team or super squad; draft across
- *   every era to build the team that can take them down.
+ *   from that decade only, one team-only spin per round — and everyone
+ *   must play a position he naturally plays (no stretch/OOP cheese).
+ * - alltime: face a legendary 68+ win team or super squad; each spin
+ *   lands on an era and you take your pick of that whole decade's best.
  */
 export default function BattleGame({ mode, navigate }) {
   if (mode !== "historic" && mode !== "alltime") {
@@ -80,7 +82,7 @@ function Battle({ mode }) {
       sub: `their real starting five`,
       abbr: meta.abbr,
       color: meta.color,
-      tagline: `Era locked — you can only draft from the ${oppSpin.decade}.`,
+      tagline: `Era locked — draft from the ${oppSpin.decade} only, and everyone plays his natural position.`,
       roster: lineup,
       decade: oppSpin.decade,
       key: oppSpin.key,
@@ -89,13 +91,24 @@ function Battle({ mode }) {
   }
 
   // --- drafting -----------------------------------------------------------
+  const strict = mode === "historic";
+
   function doSpin() {
-    const opts = { usedPoolKeys, takenNames };
-    const s =
-      mode === "historic"
-        ? decadeSpin({ ...opts, decade: opponent.decade, excludeKeys: [opponent.key] }) ||
-          decadeSpin({ ...opts, decade: opponent.decade, excludeKeys: [opponent.key], minAvailable: 1 })
-        : spinWheel(opts);
+    let s;
+    if (mode === "historic") {
+      // Only pools that can naturally fill one of the open slots qualify,
+      // so the strict-position draft never dead-ends.
+      const opts = {
+        usedPoolKeys,
+        takenNames,
+        decade: opponent.decade,
+        excludeKeys: [opponent.key],
+        openSlots: POSITIONS.filter((pos) => !roster[pos]),
+      };
+      s = decadeSpin(opts) || decadeSpin({ ...opts, minAvailable: 1 });
+    } else {
+      s = eraSpin({ usedDecades: usedPoolKeys, takenNames });
+    }
     if (!s) return;
     setSpin(s);
     setSelected(null);
@@ -105,6 +118,7 @@ function Battle({ mode }) {
 
   function handlePlace(slot) {
     if (!selected || roster[slot]) return;
+    if (strict && fitDistance(selected, slot) !== 0) return;
     setRoster({ ...roster, [slot]: selected });
     setUsedPoolKeys((keys) => [...keys, spin.key]);
     setSelected(null);
@@ -118,7 +132,7 @@ function Battle({ mode }) {
   }
 
   function autoPick() {
-    const pick = bestPick(spin.players, roster);
+    const pick = bestPick(spin.players, roster, { naturalOnly: strict });
     if (pick) setSelected(pick.player);
   }
 
@@ -183,14 +197,14 @@ function Battle({ mode }) {
           <p className="text-xs text-slate-400">
             {!opponent
               ? mode === "historic"
-                ? "Spin once to draw a real team — then beat them with players from their own era."
-                : "Face a legendary squad — draft across every era to take them down."
+                ? "Spin once to draw a real team — then beat them with players from their own era, everyone at his natural position."
+                : "Face a legendary squad — five era spins, and you take your pick of each decade's best."
               : rosterFull
                 ? "Squad locked — time to play the series."
                 : `Round ${Math.min(picksMade + 1, ROUNDS)} of ${ROUNDS} — ${
                     mode === "historic"
-                      ? `team-only spins, ${opponent.decade} locked`
-                      : "spin anywhere in history"
+                      ? `team-only spins, ${opponent.decade} locked, natural positions only`
+                      : "each spin unlocks a whole era's best"
                   }.`}
           </p>
         </div>
@@ -230,7 +244,13 @@ function Battle({ mode }) {
               onClick={doSpin}
               className="w-full rounded-2xl bg-gradient-to-b from-hoop to-orange-600 py-5 font-display text-2xl font-bold uppercase tracking-widest text-black shadow-lg shadow-hoop/25 transition hover:from-hoop2 hover:to-hoop active:scale-[0.98]"
             >
-              {picksMade === 0 ? "🎰 Spin the wheel" : "Spin again"}
+              {mode === "alltime"
+                ? picksMade === 0
+                  ? "🎰 Spin for an era"
+                  : "Spin for the next era"
+                : picksMade === 0
+                  ? "🎰 Spin the wheel"
+                  : "Spin again"}
             </button>
           )}
 
@@ -258,8 +278,10 @@ function Battle({ mode }) {
             <div className="animate-slide-up space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-display text-xl font-bold uppercase tracking-wide">
-                  <span style={{ color: teamMeta(spin.team).color }}>■</span>{" "}
-                  {spin.decade} {spin.team}
+                  <span style={{ color: spin.team ? teamMeta(spin.team).color : "#f97316" }}>
+                    ■
+                  </span>{" "}
+                  {spin.decade} {spin.team || "· Best of the Era"}
                   <span className="ml-2 align-middle text-xs font-normal normal-case tracking-normal text-slate-400">
                     pick one
                   </span>
@@ -289,7 +311,10 @@ function Battle({ mode }) {
               {selected && (
                 <div className="animate-pop rounded-xl border border-hoop/50 bg-hoop/10 p-3 text-sm">
                   <span className="font-bold text-hoop2">{selected.name}</span>{" "}
-                  selected — tap an open roster slot to lock him in.
+                  selected —{" "}
+                  {strict
+                    ? `tap an open slot he naturally plays (${selected.positions.join("/")}).`
+                    : "tap an open roster slot to lock him in."}
                 </div>
               )}
             </div>
@@ -332,6 +357,7 @@ function Battle({ mode }) {
             placing={phase === "picking" ? selected : null}
             onPlace={handlePlace}
             onSwap={handleSwap}
+            strictFit={strict}
             title="Your Squad"
           />
         </div>
@@ -357,7 +383,8 @@ function ModePicker({ navigate }) {
           </div>
           <p className="mt-1 text-sm text-slate-400">
             One spin draws a real team and locks their era. Draft from that
-            decade only — then try to beat the actual squad.
+            decade only — natural positions, no cheese — and beat the actual
+            squad.
           </p>
         </button>
         <button
@@ -370,8 +397,9 @@ function ModePicker({ navigate }) {
             All-Time Battle
           </div>
           <p className="mt-1 text-sm text-slate-400">
-            The 72-10 Bulls. The 73-9 Warriors. The Dream Team. Draft across
-            every era and take down a legend.
+            The 72-10 Bulls. The 73-9 Warriors. The Dream Team. Each spin
+            unlocks an entire era — take its best player and build a squad
+            that can take down a legend.
           </p>
         </button>
       </div>

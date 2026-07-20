@@ -56,7 +56,7 @@ export default function SpinReel({ result, spinId, onDone }) {
     const t2 = setTimeout(() => {
       timers.current.forEach(clearTimeout);
       setDecadeText(result.decade);
-      setTeamText(result.team);
+      setTeamText(result.team || "Every Franchise");
       setLocked({ decade: true, team: true });
       setSpinning(false);
       onDone?.();
@@ -70,7 +70,13 @@ export default function SpinReel({ result, spinId, onDone }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spinId]);
 
-  const meta = locked.team && result ? teamMeta(result.team) : null;
+  // Era-only spins (team == null) lock the franchise reel on the whole era.
+  const meta =
+    locked.team && result
+      ? result.team
+        ? teamMeta(result.team)
+        : { abbr: "ALL", color: "#f97316" }
+      : null;
 
   return (
     <div className="flex items-stretch gap-2 sm:gap-3">

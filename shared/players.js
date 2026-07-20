@@ -1,3 +1,4 @@
+import { DECADES } from "./constants.js";
 import d1960s from "./data/d1960s.js";
 import d1970s from "./data/d1970s.js";
 import d1980s from "./data/d1980s.js";
@@ -90,12 +91,16 @@ function respinCandidates({ axis, decade, team, usedPoolKeys = [], takenNames = 
 /**
  * Team-only spin inside a locked decade (Historic Battle): rerolls just the
  * franchise reel. `excludeKeys` drops specific pools (e.g. the opponent's).
+ * When `openSlots` is given, only pools containing at least one available
+ * player who NATURALLY plays one of those slots qualify — this keeps the
+ * strict-position draft from ever dead-ending.
  */
 export function decadeSpin({
   decade,
   usedPoolKeys = [],
   takenNames = [],
   excludeKeys = [],
+  openSlots = null,
   rng = Math.random,
   minAvailable = 4,
 } = {}) {
@@ -105,7 +110,11 @@ export function decadeSpin({
     if (!key.startsWith(`${decade}|`)) return false;
     if (used.has(key)) return false;
     const avail = POOLS[key].filter((p) => !taken.has(p.name));
-    return avail.length >= minAvailable;
+    if (avail.length < minAvailable) return false;
+    if (openSlots && !avail.some((p) => p.positions.some((pos) => openSlots.includes(pos)))) {
+      return false;
+    }
+    return true;
   });
   if (candidates.length === 0) return null;
   const key = candidates[Math.floor(rng() * candidates.length)];
@@ -116,6 +125,37 @@ export function decadeSpin({
     team,
     players: POOLS[key].filter((p) => !taken.has(p.name)),
   };
+}
+
+/**
+ * Era-only spin (All-Time Battle): the wheel lands on a decade and the pick
+ * pool is the whole era — the best available players across every franchise,
+ * deduped by name (highest-rated stint wins) and sorted by rating.
+ */
+export function eraSpin({
+  usedDecades = [],
+  takenNames = [],
+  rng = Math.random,
+  limit = 24,
+} = {}) {
+  const used = new Set(usedDecades);
+  const taken = new Set(takenNames);
+  const candidates = DECADES.filter((d) => !used.has(d));
+  if (candidates.length === 0) return null;
+  const decade = candidates[Math.floor(rng() * candidates.length)];
+  const byName = new Map();
+  for (const key of POOL_KEYS) {
+    if (!key.startsWith(`${decade}|`)) continue;
+    for (const p of POOLS[key]) {
+      if (taken.has(p.name)) continue;
+      const prev = byName.get(p.name);
+      if (!prev || p.rating > prev.rating) byName.set(p.name, p);
+    }
+  }
+  const players = [...byName.values()]
+    .sort((a, b) => b.rating - a.rating)
+    .slice(0, limit);
+  return { key: decade, decade, team: null, players };
 }
 
 export function canRespin(opts) {
