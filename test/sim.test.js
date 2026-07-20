@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { POOLS, POOL_KEYS, spinWheel } from "../shared/players.js";
+import { POOLS, POOL_KEYS, spinWheel, respinSpin, canRespin } from "../shared/players.js";
 import { POSITIONS, TEAM_META, DECADES } from "../shared/constants.js";
 import {
   evaluateTeam,
@@ -120,6 +120,41 @@ test("spinWheel respects used pools and taken players", () => {
   const taken = spin1.players.map((p) => p.name);
   const spin3 = spinWheel({ takenNames: taken, rng });
   for (const p of spin3.players) assert.ok(!taken.includes(p.name));
+});
+
+test("era respin keeps the franchise, team respin keeps the decade", () => {
+  const rng = makeRng(9);
+  for (let i = 0; i < 30; i++) {
+    const era = respinSpin({ axis: "decade", decade: "1990s", team: "Chicago Bulls", rng });
+    assert.ok(era, "Bulls exist in other decades");
+    assert.equal(era.team, "Chicago Bulls");
+    assert.notEqual(era.decade, "1990s");
+
+    const team = respinSpin({ axis: "team", decade: "1990s", team: "Chicago Bulls", rng });
+    assert.ok(team, "other 1990s teams exist");
+    assert.equal(team.decade, "1990s");
+    assert.notEqual(team.team, "Chicago Bulls");
+  }
+
+  // Cincinnati Royals only have a 1960s pool — era respin must be impossible.
+  assert.equal(canRespin({ axis: "decade", decade: "1960s", team: "Cincinnati Royals" }), false);
+  assert.equal(respinSpin({ axis: "decade", decade: "1960s", team: "Cincinnati Royals", rng }), null);
+  // But a team respin within the 1960s is fine.
+  assert.equal(canRespin({ axis: "team", decade: "1960s", team: "Cincinnati Royals" }), true);
+
+  // Respins respect used pools and taken players.
+  const used = POOL_KEYS.filter((k) => k.endsWith("|Chicago Bulls") && !k.startsWith("1990s"));
+  assert.equal(canRespin({ axis: "decade", decade: "1990s", team: "Chicago Bulls", usedPoolKeys: used }), false);
+  const taken = POOLS["1980s|Chicago Bulls"].map((p) => p.name);
+  const eraAfterTaken = respinSpin({
+    axis: "decade",
+    decade: "1990s",
+    team: "Chicago Bulls",
+    takenNames: taken,
+    usedPoolKeys: ["2000s|Chicago Bulls", "2010s|Chicago Bulls", "2020s|Chicago Bulls"],
+    rng,
+  });
+  assert.equal(eraAfterTaken, null, "no Bulls decade left once pools are used/emptied");
 });
 
 test("bestPick fills the most valuable open slot", () => {

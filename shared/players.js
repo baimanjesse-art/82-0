@@ -68,3 +68,39 @@ export function spinWheel({ usedPoolKeys = [], takenNames = [], rng = Math.rando
     players: POOLS[key].filter((p) => !taken.has(p.name)),
   };
 }
+
+// Respins: axis "decade" rerolls the era while keeping the franchise;
+// axis "team" rerolls the franchise while keeping the era.
+function respinCandidates({ axis, decade, team, usedPoolKeys = [], takenNames = [], minAvailable = 4 }) {
+  const used = new Set(usedPoolKeys);
+  const taken = new Set(takenNames);
+  return POOL_KEYS.filter((key) => {
+    const [d, t] = key.split("|");
+    if (axis === "decade") {
+      if (t !== team || d === decade) return false;
+    } else {
+      if (d !== decade || t === team) return false;
+    }
+    if (used.has(key)) return false;
+    const avail = POOLS[key].filter((p) => !taken.has(p.name));
+    return avail.length >= minAvailable;
+  });
+}
+
+export function canRespin(opts) {
+  return respinCandidates(opts).length > 0;
+}
+
+export function respinSpin({ rng = Math.random, ...opts }) {
+  const candidates = respinCandidates(opts);
+  if (candidates.length === 0) return null;
+  const key = candidates[Math.floor(rng() * candidates.length)];
+  const [decade, team] = key.split("|");
+  const taken = new Set(opts.takenNames || []);
+  return {
+    key,
+    decade,
+    team,
+    players: POOLS[key].filter((p) => !taken.has(p.name)),
+  };
+}

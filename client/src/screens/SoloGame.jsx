@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { spinWheel } from "../../../shared/players.js";
+import { spinWheel, respinSpin, canRespin } from "../../../shared/players.js";
 import { simulateSeason, bestPick, makeRng } from "../../../shared/sim.js";
 import { POSITIONS, ROUNDS, teamMeta } from "../../../shared/constants.js";
 import { encodeSolo } from "../lib/shareCode.js";
@@ -23,6 +23,7 @@ export default function SoloGame() {
   const [result, setResult] = useState(null);
   const [history, setHistory] = useState([]);
   const [shareCode, setShareCode] = useState(null);
+  const [respins, setRespins] = useState({ era: 1, team: 1 });
 
   const picksMade = POSITIONS.filter((p) => roster[p]).length;
   const rosterFull = picksMade === ROUNDS;
@@ -66,6 +67,27 @@ export default function SoloGame() {
     if (pick) setSelected(pick.player);
   }
 
+  // One era respin (keep the franchise, reroll the decade) and one team
+  // respin (keep the decade, reroll the franchise) per draft.
+  const respinBase = spin
+    ? { decade: spin.decade, team: spin.team, usedPoolKeys, takenNames }
+    : null;
+  const eraRespinPossible =
+    phase === "picking" && respins.era > 0 && respinBase && canRespin({ axis: "decade", ...respinBase });
+  const teamRespinPossible =
+    phase === "picking" && respins.team > 0 && respinBase && canRespin({ axis: "team", ...respinBase });
+
+  function doRespin(axis) {
+    if (!spin) return;
+    const s = respinSpin({ axis, ...respinBase });
+    if (!s) return;
+    setRespins((r) => (axis === "decade" ? { ...r, era: r.era - 1 } : { ...r, team: r.team - 1 }));
+    setSpin(s);
+    setSelected(null);
+    setSpinId((n) => n + 1);
+    setPhase("spinning");
+  }
+
   function runSeason() {
     const seed = (Math.random() * 2 ** 31) >>> 0;
     const res = simulateSeason(roster, makeRng(seed));
@@ -83,6 +105,7 @@ export default function SoloGame() {
     setResult(null);
     setHistory([]);
     setShareCode(null);
+    setRespins({ era: 1, team: 1 });
   }
 
   if (phase === "simming" && result) {
@@ -163,7 +186,7 @@ export default function SoloGame() {
 
           {phase === "picking" && spin && (
             <div className="animate-slide-up space-y-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-display text-xl font-bold uppercase tracking-wide">
                   <span style={{ color: teamMeta(spin.team).color }}>■</span>{" "}
                   {spin.decade} {spin.team}
@@ -171,12 +194,28 @@ export default function SoloGame() {
                     pick one
                   </span>
                 </h2>
-                <button
-                  onClick={autoPick}
-                  className="rounded-lg border border-line px-2.5 py-1 text-xs text-slate-300 hover:bg-panel2"
-                >
-                  ✨ best fit
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <RespinButton
+                    label="Era"
+                    title="Reroll the decade, keep the franchise"
+                    left={respins.era}
+                    enabled={eraRespinPossible}
+                    onClick={() => doRespin("decade")}
+                  />
+                  <RespinButton
+                    label="Team"
+                    title="Reroll the franchise, keep the decade"
+                    left={respins.team}
+                    enabled={teamRespinPossible}
+                    onClick={() => doRespin("team")}
+                  />
+                  <button
+                    onClick={autoPick}
+                    className="rounded-lg border border-line px-2.5 py-1 text-xs text-slate-300 hover:bg-panel2"
+                  >
+                    ✨ best fit
+                  </button>
+                </div>
               </div>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
                 {spin.players.map((p, i) => (
@@ -233,5 +272,29 @@ export default function SoloGame() {
         />
       </div>
     </div>
+  );
+}
+
+function RespinButton({ label, title, left, enabled, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={!enabled}
+      title={left > 0 ? title : `${label} respin already used`}
+      className={`flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition ${
+        enabled
+          ? "border-hoop/70 text-hoop2 hover:bg-hoop/15 active:scale-95"
+          : "cursor-not-allowed border-line text-slate-600"
+      }`}
+    >
+      ↻ {label}
+      <span
+        className={`rounded px-1 font-display text-[11px] ${
+          left > 0 ? "bg-hoop/20 text-hoop2" : "bg-line/50 text-slate-600"
+        }`}
+      >
+        ×{left}
+      </span>
+    </button>
   );
 }
