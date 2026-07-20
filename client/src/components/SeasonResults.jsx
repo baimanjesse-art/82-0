@@ -1,7 +1,7 @@
 import { useState } from "react";
 import GradeBadge from "./GradeBadge.jsx";
 import StatBars from "./StatBars.jsx";
-import RosterBoard from "./RosterBoard.jsx";
+import CourtBoard from "./CourtBoard.jsx";
 import { downloadShareCard, copyText } from "../lib/share.js";
 
 /**
@@ -89,7 +89,7 @@ export default function SeasonResults({ name, roster, result, shareCode, onPlayA
         </div>
       </div>
 
-      <RosterBoard roster={roster} title="Final Roster" />
+      <CourtBoard roster={roster} title="Final Roster" />
 
       <div className="flex flex-wrap gap-2">
         {onPlayAgain && (

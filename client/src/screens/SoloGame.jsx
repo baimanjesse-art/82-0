@@ -5,7 +5,7 @@ import { POSITIONS, ROUNDS, teamMeta } from "../../../shared/constants.js";
 import { encodeSolo } from "../lib/shareCode.js";
 import SpinReel from "../components/SpinReel.jsx";
 import PlayerCard from "../components/PlayerCard.jsx";
-import RosterBoard from "../components/RosterBoard.jsx";
+import CourtBoard from "../components/CourtBoard.jsx";
 import SeasonResults from "../components/SeasonResults.jsx";
 import SeasonPlayback from "../components/SeasonPlayback.jsx";
 import Confetti from "../components/Confetti.jsx";
@@ -174,7 +174,7 @@ export default function SoloGame() {
           {phase === "idle" && !rosterFull && (
             <button
               onClick={doSpin}
-              className="w-full rounded-2xl bg-gradient-to-b from-hoop to-orange-600 py-5 font-display text-2xl font-bold uppercase tracking-widest text-black shadow-lg shadow-hoop/25 transition hover:from-hoop2 hover:to-hoop active:scale-[0.98]"
+              className="btn-ball w-full rounded-2xl py-5 font-display text-2xl font-bold uppercase tracking-widest"
             >
               {picksMade === 0 ? "🎰 Spin the wheel" : "Spin again"}
             </button>
@@ -276,7 +276,7 @@ export default function SoloGame() {
           )}
         </div>
 
-        <RosterBoard
+        <CourtBoard
           roster={roster}
           placing={phase === "picking" ? selected : null}
           onPlace={handlePlace}

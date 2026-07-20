@@ -7,7 +7,7 @@ import {
   respinSpin,
   canRespin,
   decadeSpin,
-  eraSpin,
+  eraLineupSpin,
 } from "../shared/players.js";
 import { POSITIONS, TEAM_META, DECADES } from "../shared/constants.js";
 import {
@@ -229,26 +229,35 @@ test("decadeSpin locks the decade and respects exclusions", () => {
   }
 });
 
-test("eraSpin serves a whole decade's best, deduped and sorted", () => {
+test("eraLineupSpin deals five distinct 88+ players at their natural spots", () => {
   const rng = makeRng(11);
-  const s = eraSpin({ rng });
-  assert.ok(s, "spin lands");
-  assert.equal(s.team, null, "era spins carry no franchise");
-  assert.ok(DECADES.includes(s.decade));
-  const names = s.players.map((p) => p.name);
-  assert.equal(new Set(names).size, names.length, "no duplicate names");
-  for (let i = 1; i < s.players.length; i++) {
-    assert.ok(s.players[i - 1].rating >= s.players[i].rating, "sorted by rating");
+  // Every decade, many deals: candidates are 88+, natural at their slot,
+  // never duplicated within a deal, and from the spun decade.
+  for (const decade of DECADES) {
+    for (let i = 0; i < 25; i++) {
+      const s = eraLineupSpin({ usedDecades: DECADES.filter((d) => d !== decade), rng });
+      assert.ok(s, `${decade} deal lands`);
+      assert.equal(s.decade, decade);
+      assert.equal(s.team, null, "era deals carry no franchise");
+      const names = POSITIONS.map((pos) => s.lineup[pos].name);
+      assert.equal(new Set(names).size, 5, `${decade} deal has five distinct players`);
+      for (const pos of POSITIONS) {
+        const p = s.lineup[pos];
+        assert.equal(p.decade, decade);
+        assert.ok(p.positions.includes(pos), `${decade} ${p.name} dealt at ${pos} unnaturally`);
+        assert.ok(p.rating >= 88, `${decade} ${p.name} rated ${p.rating} at ${pos}`);
+      }
+    }
   }
-  assert.ok(s.players.length >= 15 && s.players.length <= 24, `pool size ${s.players.length}`);
-  for (const p of s.players) assert.equal(p.decade, s.decade);
-  // Used decades are excluded; taken names never reappear.
-  const s2 = eraSpin({ usedDecades: DECADES.filter((d) => d !== "1990s"), rng });
-  assert.equal(s2.decade, "1990s");
-  const taken = s2.players.slice(0, 5).map((p) => p.name);
-  const s3 = eraSpin({ usedDecades: DECADES.filter((d) => d !== "1990s"), takenNames: taken, rng });
-  for (const p of s3.players) assert.ok(!taken.includes(p.name));
-  assert.equal(eraSpin({ usedDecades: DECADES, rng }), null);
+  // Taken names (e.g. the legend opponent's five) never get dealt.
+  const goatNames = ["Magic Johnson", "Michael Jordan", "LeBron James", "Larry Bird", "Kareem Abdul-Jabbar"];
+  for (let i = 0; i < 40; i++) {
+    const s = eraLineupSpin({ takenNames: goatNames, rng });
+    for (const pos of POSITIONS) {
+      assert.ok(!goatNames.includes(s.lineup[pos].name), "dealt a taken player");
+    }
+  }
+  assert.equal(eraLineupSpin({ usedDecades: DECADES, rng }), null);
 });
 
 test("strict-position historic drafts never dead-end", () => {

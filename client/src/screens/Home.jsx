@@ -11,28 +11,53 @@ const MARQUEE = [
 export default function Home({ navigate }) {
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="py-8 text-center sm:py-12">
-        <div className="mb-4 flex items-center justify-center">
+      <div className="relative overflow-hidden py-10 text-center sm:py-14">
+        {/* center-court circle behind the hero */}
+        <svg
+          viewBox="0 0 100 60"
+          className="pointer-events-none absolute inset-x-0 top-1/2 -z-10 mx-auto w-full max-w-xl -translate-y-1/2 opacity-25"
+          aria-hidden="true"
+        >
+          <g stroke="#f3e3c3" strokeWidth="0.35" fill="none">
+            <circle cx="50" cy="30" r="24" />
+            <circle cx="50" cy="30" r="4.5" fill="#f97316" fillOpacity="0.35" />
+            <line x1="50" y1="0" x2="50" y2="60" />
+          </g>
+        </svg>
+
+        {/* the starting five, huddled on the center circle */}
+        <div className="mb-5 flex items-end justify-center">
           {MARQUEE.map((p, i) => (
             <div
               key={p.name}
               className="animate-slide-up -ml-3 first:ml-0"
-              style={{ animationDelay: `${i * 90}ms`, animationFillMode: "backwards", zIndex: 10 - i }}
+              style={{
+                animationDelay: `${i * 90}ms`,
+                animationFillMode: "backwards",
+                zIndex: 10 - i,
+                transform: `translateY(${[8, 3, 0, 3, 8][i]}px)`,
+              }}
             >
               <PlayerPhoto
                 name={p.name}
                 team={p.team}
-                className="h-14 w-14 rounded-full border-2 border-court shadow-lg sm:h-16 sm:w-16"
+                className="h-14 w-14 rounded-full border-2 border-[#3a2917] shadow-[0_6px_16px_rgba(0,0,0,0.6)] sm:h-16 sm:w-16"
               />
             </div>
           ))}
         </div>
-        <h1 className="font-display text-6xl font-bold uppercase tracking-tight sm:text-8xl">
-          82-0 <span className="text-hoop">Arena</span>
+
+        <h1
+          className="font-display text-6xl font-bold uppercase leading-none tracking-tight sm:text-8xl"
+          style={{ textShadow: "0 6px 0 rgba(0,0,0,0.45), 0 14px 34px rgba(249,115,22,0.25)" }}
+        >
+          <span className="led tabular-nums">82-0</span>{" "}
+          <span className="text-slate-100">Arena</span>
         </h1>
+        <div className="mx-auto mt-2 h-1 w-28 rounded-full bg-gradient-to-r from-transparent via-hoop to-transparent" />
         <p className="mx-auto mt-3 max-w-md text-sm text-slate-400 sm:text-base">
-          Spin the wheel. Get a decade and a franchise. Draft one legend per
-          spin until your five-man squad is set — then sim a full 82-game
+          Spin the wheel. Get a decade and a franchise. Put one legend on the
+          floor per spin until your five are set — then sim a full 82-game
           season. Chase perfection.
         </p>
       </div>
@@ -42,7 +67,7 @@ export default function Home({ navigate }) {
           onClick={() => navigate("/solo")}
           className="group animate-slide-up rounded-2xl border border-line bg-panel p-6 text-left transition hover:-translate-y-0.5 hover:border-hoop hover:bg-panel2 hover:shadow-xl hover:shadow-hoop/10 active:scale-[0.98]"
         >
-          <div className="text-3xl">🎰</div>
+          <div className="text-3xl">🏀</div>
           <div className="mt-2 font-display text-2xl font-bold uppercase tracking-wide group-hover:text-hoop2">
             Solo Run
           </div>
@@ -69,7 +94,7 @@ export default function Home({ navigate }) {
           className="group animate-slide-up rounded-2xl border border-line bg-panel p-6 text-left transition hover:-translate-y-0.5 hover:border-hoop hover:bg-panel2 hover:shadow-xl hover:shadow-hoop/10 active:scale-[0.98]"
           style={{ animationDelay: "160ms", animationFillMode: "backwards" }}
         >
-          <div className="text-3xl">🏛️</div>
+          <div className="text-3xl">🕰️</div>
           <div className="mt-2 font-display text-2xl font-bold uppercase tracking-wide group-hover:text-hoop2">
             Historic Battle
           </div>
@@ -84,13 +109,14 @@ export default function Home({ navigate }) {
           className="group animate-slide-up rounded-2xl border border-line bg-panel p-6 text-left transition hover:-translate-y-0.5 hover:border-hoop hover:bg-panel2 hover:shadow-xl hover:shadow-hoop/10 active:scale-[0.98]"
           style={{ animationDelay: "240ms", animationFillMode: "backwards" }}
         >
-          <div className="text-3xl">👑</div>
+          <div className="text-3xl">🐐</div>
           <div className="mt-2 font-display text-2xl font-bold uppercase tracking-wide group-hover:text-hoop2">
             All-Time Battle
           </div>
           <p className="mt-1 text-sm text-slate-400">
-            The 72-10 Bulls, the 73-9 Warriors, even the Dream Team — spin
-            for eras, take each decade's best, and slay a legend.
+            The 72-10 Bulls, the 73-9 Warriors, even the Dream Team — every
+            era spin deals five random 88+ stars. Take one per spin and slay
+            a legend.
           </p>
         </button>
         <button

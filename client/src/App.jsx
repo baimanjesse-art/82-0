@@ -22,13 +22,17 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-line bg-court/90 backdrop-blur">
+      <header className="scoreboard sticky top-0 z-20 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
           <button
             onClick={() => navigate("/")}
-            className="font-display text-2xl font-bold uppercase tracking-wide"
+            className="flex items-center gap-2 font-display text-2xl font-bold uppercase tracking-wide"
           >
-            🏀 82-0 <span className="text-hoop">Arena</span>
+            <span className="ball-icon" aria-hidden="true" />
+            <span>
+              <span className="led tabular-nums">82-0</span>{" "}
+              <span className="text-slate-200">Arena</span>
+            </span>
           </button>
           <nav className="flex gap-1 text-sm font-bold">
             <NavBtn onClick={() => navigate("/solo")} active={page === "solo"}>
@@ -60,8 +64,10 @@ function NavBtn({ children, onClick, active }) {
   return (
     <button
       onClick={onClick}
-      className={`rounded-lg px-3 py-1.5 transition ${
-        active ? "bg-panel2 text-hoop2" : "text-slate-400 hover:text-slate-200"
+      className={`rounded-md border-b-2 px-3 py-1.5 font-display uppercase tracking-wider transition ${
+        active
+          ? "border-hoop bg-white/5 text-hoop2"
+          : "border-transparent text-slate-400 hover:text-slate-200"
       }`}
     >
       {children}

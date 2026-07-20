@@ -3,7 +3,7 @@ import { useRoom, loadSession } from "../lib/roomClient.js";
 import { POSITIONS } from "../../../shared/constants.js";
 import SpinReel from "../components/SpinReel.jsx";
 import PlayerCard from "../components/PlayerCard.jsx";
-import RosterBoard from "../components/RosterBoard.jsx";
+import CourtBoard from "../components/CourtBoard.jsx";
 import TimerRing from "../components/TimerRing.jsx";
 import DraftLog from "../components/DraftLog.jsx";
 import ChatPanel from "../components/ChatPanel.jsx";
@@ -346,7 +346,7 @@ export default function H2HGame({ inviteCode }) {
           {/* boards side by side */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {myRoster && (
-              <RosterBoard
+              <CourtBoard
                 roster={myRoster}
                 placing={
                   state.phase === "drafting" && !state.youPicked ? selected : null
@@ -362,7 +362,7 @@ export default function H2HGame({ inviteCode }) {
               />
             )}
             {oppRoster && (
-              <RosterBoard
+              <CourtBoard
                 roster={oppRoster}
                 title={opp?.name || "Opponent"}
                 accent="#fb7185"

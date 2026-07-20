@@ -1,4 +1,4 @@
-import { DECADES } from "./constants.js";
+import { DECADES, POSITIONS } from "./constants.js";
 import d1960s from "./data/d1960s.js";
 import d1970s from "./data/d1970s.js";
 import d1980s from "./data/d1980s.js";
@@ -128,15 +128,17 @@ export function decadeSpin({
 }
 
 /**
- * Era-only spin (All-Time Battle): the wheel lands on a decade and the pick
- * pool is the whole era — the best available players across every franchise,
- * deduped by name (highest-rated stint wins) and sorted by rating.
+ * Era-lineup spin (All-Time Battle): the wheel lands on a decade and deals a
+ * random five from that era — one 88+ player at each position (natural
+ * positions only, deduped by name with the highest-rated stint). If an era
+ * runs out of 88+ options at a spot, the floor relaxes just enough to keep
+ * dealing. Every decade can only come up once per draft.
  */
-export function eraSpin({
+export function eraLineupSpin({
   usedDecades = [],
   takenNames = [],
   rng = Math.random,
-  limit = 24,
+  minRating = 88,
 } = {}) {
   const used = new Set(usedDecades);
   const taken = new Set(takenNames);
@@ -152,10 +154,22 @@ export function eraSpin({
       if (!prev || p.rating > prev.rating) byName.set(p.name, p);
     }
   }
-  const players = [...byName.values()]
-    .sort((a, b) => b.rating - a.rating)
-    .slice(0, limit);
-  return { key: decade, decade, team: null, players };
+  const pool = [...byName.values()];
+  const lineup = {};
+  const chosen = new Set();
+  for (const pos of POSITIONS) {
+    let pick = null;
+    for (let floor = minRating; floor >= 60 && !pick; floor -= 2) {
+      const options = pool.filter(
+        (p) => !chosen.has(p.name) && p.positions.includes(pos) && p.rating >= floor
+      );
+      if (options.length > 0) pick = options[Math.floor(rng() * options.length)];
+    }
+    if (!pick) return null;
+    lineup[pos] = pick;
+    chosen.add(pick.name);
+  }
+  return { key: decade, decade, team: null, lineup };
 }
 
 export function canRespin(opts) {

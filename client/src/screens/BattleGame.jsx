@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { spinWheel, decadeSpin, eraSpin, POOLS } from "../../../shared/players.js";
+import { spinWheel, decadeSpin, eraLineupSpin, POOLS } from "../../../shared/players.js";
 import {
   bestLineup,
   bestPick,
@@ -14,7 +14,7 @@ import { POSITIONS, ROUNDS, teamMeta } from "../../../shared/constants.js";
 import { randomLegend } from "../../../shared/legends.js";
 import SpinReel from "../components/SpinReel.jsx";
 import PlayerCard from "../components/PlayerCard.jsx";
-import RosterBoard from "../components/RosterBoard.jsx";
+import CourtBoard from "../components/CourtBoard.jsx";
 import H2HCompare from "../components/H2HCompare.jsx";
 
 const EMPTY_ROSTER = { PG: null, SG: null, SF: null, PF: null, C: null };
@@ -25,7 +25,8 @@ const EMPTY_ROSTER = { PG: null, SG: null, SF: null, PF: null, C: null };
  *   from that decade only, one team-only spin per round — and everyone
  *   must play a position he naturally plays (no stretch/OOP cheese).
  * - alltime: face a legendary 68+ win team or super squad; each spin
- *   lands on an era and you take your pick of that whole decade's best.
+ *   lands on an era and deals five random 88+ players, one per position —
+ *   take one, and he locks in at that spot.
  */
 export default function BattleGame({ mode, navigate }) {
   if (mode !== "historic" && mode !== "alltime") {
@@ -45,6 +46,8 @@ function Battle({ mode }) {
   const [spin, setSpin] = useState(null);
   const [spinId, setSpinId] = useState(0);
   const [selected, setSelected] = useState(null);
+  // All-Time deals pin each pick to the position he was dealt at.
+  const [selectedSlot, setSelectedSlot] = useState(null);
   const [result, setResult] = useState(null);
 
   const picksMade = POSITIONS.filter((p) => roster[p]).length;
@@ -107,21 +110,35 @@ function Battle({ mode }) {
       };
       s = decadeSpin(opts) || decadeSpin({ ...opts, minAvailable: 1 });
     } else {
-      s = eraSpin({ usedDecades: usedPoolKeys, takenNames });
+      s = eraLineupSpin({ usedDecades: usedPoolKeys, takenNames });
     }
     if (!s) return;
     setSpin(s);
     setSelected(null);
+    setSelectedSlot(null);
     setSpinId((n) => n + 1);
     setPhase("spinning");
   }
 
+  function selectDeal(pos) {
+    if (roster[pos]) return;
+    if (selectedSlot === pos) {
+      setSelected(null);
+      setSelectedSlot(null);
+    } else {
+      setSelected(spin.lineup[pos]);
+      setSelectedSlot(pos);
+    }
+  }
+
   function handlePlace(slot) {
     if (!selected || roster[slot]) return;
+    if (selectedSlot && slot !== selectedSlot) return;
     if (strict && fitDistance(selected, slot) !== 0) return;
     setRoster({ ...roster, [slot]: selected });
     setUsedPoolKeys((keys) => [...keys, spin.key]);
     setSelected(null);
+    setSelectedSlot(null);
     setSpin(null);
     setPhase("idle");
   }
@@ -132,6 +149,16 @@ function Battle({ mode }) {
   }
 
   function autoPick() {
+    if (spin.lineup) {
+      // best dealt player at a still-open position
+      const open = POSITIONS.filter((pos) => !roster[pos]);
+      const best = open.reduce(
+        (acc, pos) => (!acc || spin.lineup[pos].rating > spin.lineup[acc].rating ? pos : acc),
+        null
+      );
+      if (best) selectDeal(best);
+      return;
+    }
     const pick = bestPick(spin.players, roster, { naturalOnly: strict });
     if (pick) setSelected(pick.player);
   }
@@ -165,6 +192,7 @@ function Battle({ mode }) {
     setUsedPoolKeys([]);
     setSpin(null);
     setSelected(null);
+    setSelectedSlot(null);
     setResult(null);
   }
 
@@ -179,7 +207,7 @@ function Battle({ mode }) {
         <H2HCompare payload={result} youId="you" readOnly />
         <button
           onClick={reset}
-          className="w-full rounded-2xl bg-gradient-to-b from-hoop to-orange-600 py-4 font-display text-xl font-bold uppercase tracking-widest text-black transition hover:from-hoop2 hover:to-hoop active:scale-[0.98]"
+          className="btn-ball w-full rounded-2xl py-4 font-display text-xl font-bold uppercase tracking-widest"
         >
           🔄 Run it back
         </button>
@@ -198,13 +226,13 @@ function Battle({ mode }) {
             {!opponent
               ? mode === "historic"
                 ? "Spin once to draw a real team — then beat them with players from their own era, everyone at his natural position."
-                : "Face a legendary squad — five era spins, and you take your pick of each decade's best."
+                : "Face a legendary squad — every era spin deals five random 88+ stars, one per position. Take one, he locks in at his spot."
               : rosterFull
                 ? "Squad locked — time to play the series."
                 : `Round ${Math.min(picksMade + 1, ROUNDS)} of ${ROUNDS} — ${
                     mode === "historic"
                       ? `team-only spins, ${opponent.decade} locked, natural positions only`
-                      : "each spin unlocks a whole era's best"
+                      : "each era deals five random 88+ stars, one per spot"
                   }.`}
           </p>
         </div>
@@ -225,7 +253,7 @@ function Battle({ mode }) {
           {phase === "scout" && (
             <button
               onClick={scout}
-              className="w-full rounded-2xl bg-gradient-to-b from-hoop to-orange-600 py-5 font-display text-2xl font-bold uppercase tracking-widest text-black shadow-lg shadow-hoop/25 transition hover:from-hoop2 hover:to-hoop active:scale-[0.98]"
+              className="btn-ball w-full rounded-2xl py-5 font-display text-2xl font-bold uppercase tracking-widest"
             >
               {mode === "historic" ? "🔍 Spin for your opponent" : "🎲 Reveal your opponent"}
             </button>
@@ -242,7 +270,7 @@ function Battle({ mode }) {
           {phase === "idle" && opponent && !rosterFull && (
             <button
               onClick={doSpin}
-              className="w-full rounded-2xl bg-gradient-to-b from-hoop to-orange-600 py-5 font-display text-2xl font-bold uppercase tracking-widest text-black shadow-lg shadow-hoop/25 transition hover:from-hoop2 hover:to-hoop active:scale-[0.98]"
+              className="btn-ball w-full rounded-2xl py-5 font-display text-2xl font-bold uppercase tracking-widest"
             >
               {mode === "alltime"
                 ? picksMade === 0
@@ -281,9 +309,9 @@ function Battle({ mode }) {
                   <span style={{ color: spin.team ? teamMeta(spin.team).color : "#f97316" }}>
                     ■
                   </span>{" "}
-                  {spin.decade} {spin.team || "· Best of the Era"}
+                  {spin.decade} {spin.team || "· The Era Deals Five"}
                   <span className="ml-2 align-middle text-xs font-normal normal-case tracking-normal text-slate-400">
-                    pick one
+                    {spin.lineup ? "take one — he plays his spot" : "pick one"}
                   </span>
                 </h2>
                 <button
@@ -293,28 +321,62 @@ function Battle({ mode }) {
                   ✨ best fit
                 </button>
               </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
-                {spin.players.map((p, i) => (
-                  <div
-                    key={p.name}
-                    className="animate-slide-up"
-                    style={{ animationDelay: `${i * 45}ms`, animationFillMode: "backwards" }}
-                  >
-                    <PlayerCard
-                      player={p}
-                      selected={selected?.name === p.name}
-                      onClick={() => setSelected(selected?.name === p.name ? null : p)}
-                    />
-                  </div>
-                ))}
-              </div>
+              {spin.lineup ? (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+                  {POSITIONS.map((pos, i) => {
+                    const p = spin.lineup[pos];
+                    const open = !roster[pos];
+                    return (
+                      <div
+                        key={pos}
+                        className={`animate-slide-up ${open ? "" : "opacity-40"}`}
+                        style={{ animationDelay: `${i * 45}ms`, animationFillMode: "backwards" }}
+                      >
+                        <div className="mb-1 flex items-center justify-between px-1">
+                          <span className="font-display text-xs font-bold uppercase tracking-[0.2em] text-hoop2">
+                            {pos}
+                          </span>
+                          {!open && (
+                            <span className="text-[10px] uppercase tracking-wide text-slate-500">
+                              spot filled
+                            </span>
+                          )}
+                        </div>
+                        <PlayerCard
+                          player={p}
+                          selected={selectedSlot === pos}
+                          onClick={() => open && selectDeal(pos)}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-3">
+                  {spin.players.map((p, i) => (
+                    <div
+                      key={p.name}
+                      className="animate-slide-up"
+                      style={{ animationDelay: `${i * 45}ms`, animationFillMode: "backwards" }}
+                    >
+                      <PlayerCard
+                        player={p}
+                        selected={selected?.name === p.name}
+                        onClick={() => setSelected(selected?.name === p.name ? null : p)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
               {selected && (
                 <div className="animate-pop rounded-xl border border-hoop/50 bg-hoop/10 p-3 text-sm">
                   <span className="font-bold text-hoop2">{selected.name}</span>{" "}
                   selected —{" "}
-                  {strict
-                    ? `tap an open slot he naturally plays (${selected.positions.join("/")}).`
-                    : "tap an open roster slot to lock him in."}
+                  {selectedSlot
+                    ? `tap the glowing ${selectedSlot} spot on your court to lock him in.`
+                    : strict
+                      ? `tap an open spot he naturally plays (${selected.positions.join("/")}).`
+                      : "tap an open spot on your court to lock him in."}
                 </div>
               )}
             </div>
@@ -348,16 +410,17 @@ function Battle({ mode }) {
                   <p className="mt-1 text-xs text-slate-400">{opponent.tagline}</p>
                 )}
               </div>
-              <RosterBoard roster={opponent.roster} compact accent={opponent.color} />
+              <CourtBoard roster={opponent.roster} compact accent={opponent.color} />
             </div>
           )}
 
-          <RosterBoard
+          <CourtBoard
             roster={roster}
             placing={phase === "picking" ? selected : null}
             onPlace={handlePlace}
             onSwap={handleSwap}
             strictFit={strict}
+            onlySlots={selectedSlot ? [selectedSlot] : null}
             title="Your Squad"
           />
         </div>
@@ -377,7 +440,7 @@ function ModePicker({ navigate }) {
           onClick={() => navigate("/battle/historic")}
           className="group animate-slide-up rounded-2xl border border-line bg-panel p-6 text-left transition hover:-translate-y-0.5 hover:border-hoop hover:bg-panel2 hover:shadow-xl hover:shadow-hoop/10 active:scale-[0.98]"
         >
-          <div className="text-3xl">🏛️</div>
+          <div className="text-3xl">🕰️</div>
           <div className="mt-2 font-display text-2xl font-bold uppercase tracking-wide group-hover:text-hoop2">
             Historic Battle
           </div>
@@ -392,14 +455,14 @@ function ModePicker({ navigate }) {
           className="group animate-slide-up rounded-2xl border border-line bg-panel p-6 text-left transition hover:-translate-y-0.5 hover:border-hoop hover:bg-panel2 hover:shadow-xl hover:shadow-hoop/10 active:scale-[0.98]"
           style={{ animationDelay: "80ms", animationFillMode: "backwards" }}
         >
-          <div className="text-3xl">👑</div>
+          <div className="text-3xl">🐐</div>
           <div className="mt-2 font-display text-2xl font-bold uppercase tracking-wide group-hover:text-hoop2">
             All-Time Battle
           </div>
           <p className="mt-1 text-sm text-slate-400">
-            The 72-10 Bulls. The 73-9 Warriors. The Dream Team. Each spin
-            unlocks an entire era — take its best player and build a squad
-            that can take down a legend.
+            The 72-10 Bulls. The 73-9 Warriors. The Dream Team. Every era spin
+            deals five random 88+ stars, one per position — take one and
+            build the squad that slays a legend.
           </p>
         </button>
       </div>

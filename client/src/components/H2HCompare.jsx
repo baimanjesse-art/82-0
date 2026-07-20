@@ -1,6 +1,6 @@
 import { useState } from "react";
 import GradeBadge from "./GradeBadge.jsx";
-import RosterBoard from "./RosterBoard.jsx";
+import CourtBoard from "./CourtBoard.jsx";
 import Confetti from "./Confetti.jsx";
 import { apiPost } from "../lib/api.js";
 import { copyText } from "../lib/share.js";
@@ -107,7 +107,7 @@ export default function H2HCompare({ payload, youId, players, onRematch, readOnl
                 </div>
               </div>
             </div>
-            <RosterBoard roster={r.rosters[id]} compact accent={accent} />
+            <CourtBoard roster={r.rosters[id]} compact accent={accent} />
           </div>
         ))}
       </div>

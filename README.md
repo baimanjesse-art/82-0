@@ -33,9 +33,9 @@ WebSocket** server for real-time head-to-head play.
 - The opponent is a legend: every real **68+ win team** ('96 and '97 Bulls,
   '16 Warriors, '72 Lakers, '67 Sixers), the **1992 Dream Team**, the
   **2008 Redeem Team**, or the all-time first team.
-- Each of your five spins lands on an **era**, not a team — you take your
-  pick from that whole decade's best players. Build the ultimate
-  cross-generation squad and try to survive seven games.
+- Each of your five spins lands on an **era**, not a team — and the era
+  deals **five random 88+ players, one per position**. Take one and he locks
+  in at his spot. Build a cross-generation squad and survive seven games.
 
 ### Head-to-Head (real-time)
 - Create a room, share the 4-letter code (or invite link `#/h2h/CODE`).

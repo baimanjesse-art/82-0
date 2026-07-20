@@ -61,10 +61,86 @@ body {
   @apply text-slate-200 antialiased;
   font-family: var(--font-sans);
   background:
-    radial-gradient(1100px 500px at 50% -10%, rgba(249, 115, 22, 0.09), transparent 65%),
-    radial-gradient(900px 600px at 85% 110%, rgba(56, 89, 220, 0.1), transparent 60%),
+    radial-gradient(1100px 500px at 50% -10%, rgba(249, 115, 22, 0.13), transparent 65%),
+    radial-gradient(900px 600px at 85% 110%, rgba(160, 106, 51, 0.14), transparent 60%),
+    radial-gradient(700px 500px at 8% 100%, rgba(120, 60, 15, 0.1), transparent 60%),
     var(--color-court);
   background-attachment: fixed;
+}
+
+/* --- basketball chrome ---------------------------------------------------- */
+
+/* leather call-to-action: pebbled orange with seam lines, like the rock */
+.btn-ball {
+  position: relative;
+  overflow: hidden;
+  color: #1a0c02;
+  background: radial-gradient(
+    120% 170% at 50% -35%,
+    #ffb066 0%,
+    #f97316 48%,
+    #d95e0a 80%,
+    #b34a05 100%
+  );
+  box-shadow:
+    inset 0 -4px 10px rgba(90, 35, 0, 0.5),
+    inset 0 2px 6px rgba(255, 214, 165, 0.55),
+    0 10px 26px rgba(249, 115, 22, 0.28);
+  transition: filter 0.15s, transform 0.1s;
+}
+.btn-ball::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(130% 110% at 50% -75%, transparent 63.6%, rgba(60, 22, 0, 0.45) 64.3%, transparent 65.4%),
+    radial-gradient(130% 110% at 50% 175%, transparent 63.6%, rgba(60, 22, 0, 0.45) 64.3%, transparent 65.4%),
+    linear-gradient(90deg, transparent 49.4%, rgba(60, 22, 0, 0.45) 49.75%, rgba(60, 22, 0, 0.45) 50.25%, transparent 50.6%);
+}
+.btn-ball:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.btn-ball:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* scoreboard chrome for the top bar */
+.scoreboard {
+  background: linear-gradient(180deg, #05070c 0%, #0e1219 100%);
+  border-bottom: 2px solid #3a2917;
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.55),
+    inset 0 -1px 0 rgba(249, 115, 22, 0.3);
+}
+.led {
+  color: #ffb066;
+  text-shadow:
+    0 0 8px rgba(249, 115, 22, 0.9),
+    0 0 24px rgba(249, 115, 22, 0.4);
+}
+
+/* pure-CSS basketball */
+.ball-icon {
+  position: relative;
+  display: inline-block;
+  width: 1.3em;
+  height: 1.3em;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: radial-gradient(120% 120% at 30% 25%, #ffa75c, #ed6a0e 60%, #b64a05);
+  box-shadow: inset -2px -3px 6px rgba(80, 30, 0, 0.6);
+  vertical-align: -0.22em;
+}
+.ball-icon::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent 46%, rgba(40, 15, 0, 0.75) 48.5%, rgba(40, 15, 0, 0.75) 51.5%, transparent 54%),
+    linear-gradient(0deg, transparent 46%, rgba(40, 15, 0, 0.75) 48.5%, rgba(40, 15, 0, 0.75) 51.5%, transparent 54%),
+    radial-gradient(95% 95% at -25% 50%, transparent 58%, rgba(40, 15, 0, 0.75) 61%, transparent 65%),
+    radial-gradient(95% 95% at 125% 50%, transparent 58%, rgba(40, 15, 0, 0.75) 61%, transparent 65%);
 }
 
 .font-display {
