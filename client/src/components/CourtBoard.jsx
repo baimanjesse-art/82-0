@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { POSITIONS, teamMeta } from "../../../shared/constants.js";
 import { fitDistance } from "../../../shared/sim.js";
 import PlayerPhoto from "./PlayerPhoto.jsx";
@@ -34,9 +34,27 @@ export default function CourtBoard({
   const swapMode = Boolean(onSwap) && !placing;
   const filled = POSITIONS.filter((pos) => roster[pos]).length;
 
+  const rootRef = useRef(null);
+  const lastPlacedName = useRef(null);
+
   useEffect(() => {
     if (!swapMode) setSwapFrom(null);
   }, [swapMode]);
+
+  // When a player gets picked, bring the court into view so you can drop him
+  // on a slot without scrolling — but only when the board is actually below
+  // the fold (on the desktop side-by-side layout it's already visible, so we
+  // leave the page where it is).
+  useEffect(() => {
+    const name = placing?.name ?? null;
+    if (name && name !== lastPlacedName.current && rootRef.current) {
+      const rect = rootRef.current.getBoundingClientRect();
+      if (rect.top < 0 || rect.top > window.innerHeight * 0.5) {
+        rootRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+    lastPlacedName.current = name;
+  }, [placing]);
 
   function handleSpotTap(pos, hasPlayer) {
     if (!swapMode) return;
@@ -55,7 +73,10 @@ export default function CourtBoard({
   const paint = accent || "#f97316";
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[#3a2917] bg-[#241708] shadow-[0_10px_30px_rgba(0,0,0,0.4)]">
+    <div
+      ref={rootRef}
+      className="scroll-mt-20 overflow-hidden rounded-2xl border border-[#3a2917] bg-[#241708] shadow-[0_10px_30px_rgba(0,0,0,0.4)]"
+    >
       {title && (
         <div className="flex items-center justify-between border-b border-[#3a2917] bg-gradient-to-b from-black/60 to-black/30 px-3 py-2">
           <span
