@@ -16,6 +16,8 @@ import SpinReel from "../components/SpinReel.jsx";
 import PlayerCard from "../components/PlayerCard.jsx";
 import CourtBoard from "../components/CourtBoard.jsx";
 import H2HCompare from "../components/H2HCompare.jsx";
+import RankBadge from "../components/RankBadge.jsx";
+import { recordBattle } from "../lib/career.js";
 
 const EMPTY_ROSTER = { PG: null, SG: null, SF: null, PF: null, C: null };
 
@@ -169,6 +171,10 @@ function Battle({ mode }) {
     const evYou = evaluateTeam(roster);
     const evOpp = evaluateTeam(opponent.roster);
     const series = simulateSeries(evYou, evOpp, rng);
+    const won = series.winner === "A";
+    // Persist the offline battle-career rating (opponent Elo scales with how
+    // loaded their squad is, so beating a legend moves you far more).
+    const career = recordBattle({ won, oppOverall: evOpp.overall, mode });
     setResult({
       order: ["you", "opp"],
       names: { you: "Your Squad", opp: opponent.name },
@@ -179,7 +185,8 @@ function Battle({ mode }) {
       rosters: { you: roster, opp: opponent.roster },
       series,
       edges: statEdges(evYou, evOpp),
-      winnerId: series.winner === "A" ? "you" : "opp",
+      winnerId: won ? "you" : "opp",
+      career,
     });
     setPhase("results");
   }
@@ -204,6 +211,7 @@ function Battle({ mode }) {
         <h1 className="font-display text-2xl font-bold uppercase tracking-wide sm:text-3xl">
           {title}
         </h1>
+        {result.career && <CareerUpdate career={result.career} />}
         <H2HCompare payload={result} youId="you" readOnly />
         <button
           onClick={reset}
@@ -424,6 +432,59 @@ function Battle({ mode }) {
             title="Your Squad"
           />
         </div>
+      </div>
+    </div>
+  );
+}
+
+function CareerUpdate({ career }) {
+  const gained = career.delta >= 0;
+  return (
+    <div className="animate-pop overflow-hidden rounded-2xl border border-line bg-panel">
+      <div className="flex items-center justify-between border-b border-line/60 bg-black/30 px-4 py-2">
+        <span className="font-display text-xs font-bold uppercase tracking-[0.25em] text-slate-400">
+          Battle Rank
+        </span>
+        <span className="text-[11px] uppercase tracking-wide text-slate-500">
+          offline career · {career.wins}W-{career.losses}L
+        </span>
+      </div>
+      <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <RankBadge elo={career.after} size="lg" progress />
+          <div className="leading-tight">
+            <div className="text-sm text-slate-400">
+              {gained ? "Rating gained" : "Rating lost"}
+            </div>
+            <div
+              className={`font-display text-2xl font-black tabular-nums ${
+                gained ? "text-emerald-400" : "text-rose-400"
+              }`}
+            >
+              {gained ? "+" : ""}
+              {career.delta}
+            </div>
+            <div className="text-xs tabular-nums text-slate-500">
+              {career.before} → <span className="font-bold text-hoop2">{career.after}</span>
+            </div>
+          </div>
+        </div>
+        {(career.promoted || career.demoted) && (
+          <div
+            className={`rounded-xl border px-4 py-2 text-center ${
+              career.promoted
+                ? "border-emerald-500/50 bg-emerald-500/10"
+                : "border-rose-500/50 bg-rose-500/10"
+            }`}
+          >
+            <div className="text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
+              {career.promoted ? "⬆ Promoted" : "⬇ Demoted"}
+            </div>
+            <div className="font-display text-lg font-bold" style={{ color: career.rankAfter.color }}>
+              {career.rankAfter.badge} {career.rankAfter.name}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

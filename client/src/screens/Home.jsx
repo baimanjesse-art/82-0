@@ -128,10 +128,11 @@ export default function Home({ navigate }) {
             <div className="text-3xl">🏆</div>
             <div>
               <div className="font-display text-2xl font-bold uppercase tracking-wide group-hover:text-hoop2">
-                Leaderboard
+                Rankings
               </div>
               <p className="mt-1 text-sm text-slate-400">
-                Ranked head-to-head records — climb the ladder.
+                Climb seven Elo tiers — Rookie to Hall of Famer — online in H2H
+                and offline in the battle modes.
               </p>
             </div>
           </div>

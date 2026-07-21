@@ -2,6 +2,7 @@ import { useState } from "react";
 import GradeBadge from "./GradeBadge.jsx";
 import CourtBoard from "./CourtBoard.jsx";
 import Confetti from "./Confetti.jsx";
+import RankBadge from "./RankBadge.jsx";
 import { apiPost } from "../lib/api.js";
 import { copyText } from "../lib/share.js";
 
@@ -190,9 +191,12 @@ export default function H2HCompare({ payload, youId, players, onRematch, readOnl
             Ranked ladder updated
           </h3>
           {Object.entries(r.ladder).map(([name, rec]) => (
-            <div key={name} className="flex justify-between py-0.5">
-              <span className="font-semibold">{name}</span>
-              <span className="tabular-nums text-slate-400">
+            <div key={name} className="flex items-center justify-between gap-2 py-1">
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="truncate font-semibold">{name}</span>
+                <RankBadge elo={rec.elo} size="sm" />
+              </span>
+              <span className="flex-none tabular-nums text-slate-400">
                 {rec.wins}W-{rec.losses}L · <span className="font-bold text-hoop2">{rec.elo}</span>
               </span>
             </div>
